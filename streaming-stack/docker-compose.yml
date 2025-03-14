@@ -1,81 +1,121 @@
-version: "3"
+# todo:
+#  - use docker network for com between these (iirc i can even just use container names by default without this?)
+#  - add traefik labels?
+
 services:
   jellyfin:
     image: jellyfin/jellyfin
     container_name: jellyfin
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Rome
-    volumes:
-      - ./jellyfin_config:/config
-      - /media/tvshows:/data/tvshows
-      - /media/movies:/data/movies
-      - /media/anime:/data/anime
-    ports:
-      - 8096:8096
     restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8096:8096"
+    volumes:
+      - ./jellyfin/config:/config
+      - ./jellyfin/cache:/cache
+      - ${MEDIA_ROOT}/tvshows:/data/tvshows
+      - ${MEDIA_ROOT}/movies:/data/movies
+    labels:
+      - "traefik.enable=true"
+
+      - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.home.offsetmonkey538.top`)"
+      - "traefik.http.routers.jellyfin.service=jellyfin"
+      - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
+
+  jellyseerr:
+    image: fallenbagel/jellyseerr
+    container_name: jellyseerr
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - LOG_LEVEL=debug
+    #ports:
+    #  - 5055:5055
+    volumes:
+      - ./jellyseerr_config:/app/config
+    depends_on:
+      - radarr
+      - sonarr
+    labels:
+      - "traefik.enable=true"
+
+      - "traefik.http.routers.jellyseerr.rule=Host(`jellyseerr.home.offsetmonkey538.top`)"
+      - "traefik.http.routers.jellyseerr.service=jellyseerr"
+      - "traefik.http.services.jellyseerr.loadbalancer.server.port=5055"
 
   sonarr:
     image: linuxserver/sonarr
     container_name: sonarr
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Rome
+    restart: unless-stopped
+    env_file: .env
+    #ports:
+    #  - 8989:8989
     volumes:
       - ./sonarr_config:/config
-      - /media/anime:/anime
-      - /media/tvshows:/tvshows
-      - /media/transmission/downloads/complete:/downloads/complete
-    ports:
-      - 8989:8989
-    restart: unless-stopped
+      - ${MEDIA_ROOT}/tvshows:/tvshows
+      - ${MEDIA_ROOT}/transmission/downloads/complete:/downloads/complete
+    depends_on:
+      - transmission
+    labels:
+      - "traefik.enable=true"
+
+      - "traefik.http.routers.sonarr.rule=Host(`sonarr.home.offsetmonkey538.top`)"
+      - "traefik.http.routers.sonarr.service=sonarr"
+      - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
 
   radarr:
     image: linuxserver/radarr
     container_name: radarr
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Rome
+    restart: unless-stopped
+    env_file: .env
+    #ports:
+    #  - 7878:7878
     volumes:
       - ./radarr_config:/config
-      - /media/transmission/downloads/complete:/downloads/complete
-      - /media/movies:/movies
-    ports:
-      - 7878:7878
-    restart: unless-stopped
+      - ${MEDIA_ROOT}/transmission/downloads/complete:/downloads/complete
+      - ${MEDIA_ROOT}/movies:/movies
+    depends_on:
+      - transmission
+    labels:
+      - "traefik.enable=true"
+
+      - "traefik.http.routers.radarr.rule=Host(`radarr.home.offsetmonkey538.top`)"
+      - "traefik.http.routers.radarr.service=radarr"
+      - "traefik.http.services.radarr.loadbalancer.server.port=8096"
 
   bazarr:
     image: linuxserver/bazarr
     container_name: bazarr
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Rome
+    restart: unless-stopped
+    env_file: .env
+    #ports:
+    #  - 6767:6767
     volumes:
       - ./bazarr_config:/config
-      - /media/movies:/movies #optional
-      - /media/tvshows:/tvshows #optional
-      - /media/anime:/anime
-    ports:
-      - 6767:6767
-    restart: unless-stopped
+      - ${MEDIA_ROOT}/movies:/movies
+      - ${MEDIA_ROOT}/tvshows:/tvshows
+    labels:
+      - "traefik.enable=true"
 
-  jellyseerr:
-    image: fallenbagel/jellyseerr:develop
-    container_name: jellyseerr
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - LOG_LEVEL=debug
-      - TZ=Europe/Rome
-    ports:
-      - 5055:5055
-    volumes:
-      - ./jellyseerr_config:/app/config
+      - "traefik.http.routers.bazarr.rule=Host(`bazarr.home.offsetmonkey538.top`)"
+      - "traefik.http.routers.bazarr.service=bazarr"
+      - "traefik.http.services.bazarr.loadbalancer.server.port=8096"
+
+  transmission:
+    image: linuxserver/transmission
+    container_name: transmission
     restart: unless-stopped
-    depends_on:
-      - radarr
-      - sonarr
+    env_file: .env
+    ports:
+    #  - 9091:9091
+      - "51413:51413"
+      - "51413:51413/udp"
+    volumes:
+      - ./transmission_config:/config
+      - ${MEDIA_ROOT}/transmission/downloads:/downloads
+    labels:
+      - "traefik.enable=true"
+
+      - "traefik.http.routers.transmission.rule=Host(`transmission.home.offsetmonkey538.top`)"
+      - "traefik.http.routers.transmission.service=transmission"
+      - "traefik.http.services.transmission.loadbalancer.server.port=8096"
