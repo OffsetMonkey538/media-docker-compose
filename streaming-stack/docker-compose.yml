@@ -111,24 +111,24 @@ services:
       - "traefik.http.routers.bazarr.service=bazarr"
       - "traefik.http.services.bazarr.loadbalancer.server.port=6767"
 
-  jackett:
-    image: linuxserver/jackett
-    container_name: jackett
+  prowlarr:
+    image: linuxserver/prowlarr
+    container_name: prowlarr
     restart: unless-stopped
     env_file: .env
     #ports:
-    #  - 9117:9117
+    #  - 9696:9696
     volumes:
-      - ./jackett_config:/config
-      - ${MEDIA_ROOT}/jackett/downloads:/downloads
+      - ./prowlarr_config:/config
+      - ${MEDIA_ROOT}/prowlarr/downloads:/downloads
     networks:
       - traefik-proxy
     labels:
       - "traefik.enable=true"
 
-      - "traefik.http.routers.jackett.rule=Host(`jackett.home.offsetmonkey538.top`)"
-      - "traefik.http.routers.jackett.service=jackett"
-      - "traefik.http.services.jackett.loadbalancer.server.port=9117"
+      - "traefik.http.routers.prowlarr.rule=Host(`prowlarr.home.offsetmonkey538.top`)"
+      - "traefik.http.routers.prowlarr.service=prowlarr"
+      - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
 
   transmission:
     image: linuxserver/transmission
