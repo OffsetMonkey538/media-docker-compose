@@ -131,7 +131,7 @@ services:
       - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
 
   flaresolverr:
-    image: linuxserver/prowlarr
+    image: flaresolverr/flaresolverr
     container_name: flaresolverr
     restart: unless-stopped
     env_file: .env
