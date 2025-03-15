@@ -137,6 +137,8 @@ services:
     env_file: .env
     #ports:
     #  - 8191:8191
+    networks:
+      - traefik-proxy
 
   transmission:
     image: linuxserver/transmission
