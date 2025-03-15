@@ -130,6 +130,14 @@ services:
       - "traefik.http.routers.prowlarr.service=prowlarr"
       - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
 
+  flaresolverr:
+    image: linuxserver/prowlarr
+    container_name: flaresolverr
+    restart: unless-stopped
+    env_file: .env
+    #ports:
+    #  - 8191:8191
+
   transmission:
     image: linuxserver/transmission
     container_name: transmission
